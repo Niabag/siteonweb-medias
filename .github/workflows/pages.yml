@@ -1,0 +1,41 @@
+# Publication des visuels sur GitHub Pages.
+#
+# Pourquoi ce fichier existe : le constructeur « legacy » de Pages a commence a
+# echouer le 18/08/2026, instantanement et sans message exploitable, sur un
+# depot de 9 Mo ne contenant que des PNG. Contenu verifie sain, aucun fichier
+# vide, aucun nom exotique, .nojekyll ajoute sans effet. La cause est chez
+# GitHub, et la voie de sortie documentee est ce constructeur-ci.
+name: Publier les visuels
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Une seule publication a la fois. Le deployeur pousse parfois trois carrousels
+# d'affilee : sans ce garde-fou, trois publications se telescopent.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      # Le depot EST le site : on televerse la racine telle quelle, sans
+      # transformation. Aucun Jekyll, aucun rendu.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deploiement
+        uses: actions/deploy-pages@v4
